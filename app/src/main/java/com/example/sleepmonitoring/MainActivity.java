@@ -1,5 +1,6 @@
 package com.example.sleepmonitoring;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -12,14 +13,19 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -27,7 +33,24 @@ import java.util.UUID;
 
 import androidx.core.app.ActivityCompat;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.Firebase;
+import com.google.firebase.appcheck.FirebaseAppCheck;
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageMetadata;
+import com.google.firebase.storage.StorageReference;
+
 public class MainActivity extends AppCompatActivity {
+    private FirebaseStorage storage;
+    private StorageReference storageReference;
+    private StringBuilder csvDataBuilder = new StringBuilder();
     private final String TAG = this.getClass().getSimpleName();
     private static final int REQUEST_ENABLE_BT = 10;
     private BluetoothAdapter bluetoothAdapter;
@@ -47,6 +70,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        storage = FirebaseStorage.getInstance();
+        storageReference = storage.getReference();
+
+        FirebaseAppCheck firebaseAppCheck = FirebaseAppCheck.getInstance();
+        firebaseAppCheck.installAppCheckProviderFactory(
+                PlayIntegrityAppCheckProviderFactory.getInstance());
+
         setBluetooth();
     }
 
@@ -55,65 +86,54 @@ public class MainActivity extends AppCompatActivity {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter(); // 블루투스 어댑터를 디폴트 어댑터로 설정
         if (bluetoothAdapter == null) {
             Toast.makeText(getApplicationContext(), "블루투스 미지원 기기입니다.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (bluetoothAdapter.isEnabled()) {
+            selectBluetoothDevice();
         } else {
-            if (bluetoothAdapter.isEnabled()) { // 블루투스가 활성화 상태 (기기에 블루투스가 켜져있음)
-                selectBluetoothDevice(); // 블루투스 디바이스 선택 함수 호출
-            } else { // 블루투스가 비 활성화 상태 (기기에 블루투스가 꺼져있음)
-                // 블루투스를 활성화 하기 위한 다이얼로그 출력
-                Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                // 선택한 값이 onActivityResult 함수에서 콜백된다.
-                startActivityForResult(intent, REQUEST_ENABLE_BT);
-            }
+            Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(intent, REQUEST_ENABLE_BT);
         }
     }
 
     @SuppressLint("MissingPermission")
     public void selectBluetoothDevice() {
         devices = bluetoothAdapter.getBondedDevices();
-        // 페어링 된 디바이스의 크기를 저장
         pariedDeviceCount = devices.size();
-        // 페어링 되어있는 장치가 없는 경우
         if (pariedDeviceCount == 0) {
-            // 페어링을 하기위한 함수 호출
             Toast.makeText(getApplicationContext(), "먼저 Bluetooth 설정에 들어가 페어링 해주세요", Toast.LENGTH_SHORT).show();
+            return;
         }
-        else {
-            // 디바이스를 선택하기 위한 다이얼로그 생성
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("페어링 되어있는 블루투스 디바이스 목록");
-            // 페어링 된 각각의 디바이스의 이름과 주소를 저장
-            List<String> list = new ArrayList<>();
-            // 모든 디바이스의 이름을 리스트에 추가
-            for (BluetoothDevice bluetoothDevice : devices) {
-                list.add(bluetoothDevice.getName());
-            }
-
-            list.add("취소");
-            // List를 CharSequence 배열로 변경
-            final CharSequence[] charSequences = list.toArray(new CharSequence[list.size()]);
-            list.toArray(new CharSequence[list.size()]);
-
-            // 해당 아이템을 눌렀을 때 호출 되는 이벤트 리스너
-            builder.setItems(charSequences, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    // 해당 디바이스와 연결하는 함수 호출
-                    connectDevice(charSequences[which].toString());
-                }
-            });
-            // 뒤로가기 버튼 누를 때 창이 안닫히도록 설정
-            builder.setCancelable(false);
-            // 다이얼로그 생성
-            AlertDialog alertDialog = builder.create();
-            alertDialog.show();
-        }
+        createDeviceDialog();
     }
 
     @SuppressLint("MissingPermission")
-    public void connectDevice(String deviceName) {
-        // 페어링 된 디바이스들을 모두 탐색
+    private void createDeviceDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("페어링 되어있는 블루투스 디바이스 목록");
+        List<String> list = new ArrayList<>();
+        for (BluetoothDevice bluetoothDevice : devices) {
+            list.add(bluetoothDevice.getName());
+        }
+        list.add("취소");
+
+        final CharSequence[] charSequences = list.toArray(new CharSequence[list.size()]);
+        list.toArray(new CharSequence[list.size()]);
+
+        builder.setItems(charSequences, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                connectDevice(charSequences[which].toString());
+            }
+        });
+        builder.setCancelable(false);
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+    }
+
+    @SuppressLint("MissingPermission")
+    private void connectDevice(String deviceName) {
         for (BluetoothDevice tempDevice : devices) {
-            // 사용자가 선택한 이름과 같은 디바이스로 설정하고 반복문 종료
             if (deviceName.equals(tempDevice.getName())) {
                 bluetoothDevice = tempDevice;
                 break;
@@ -121,17 +141,16 @@ public class MainActivity extends AppCompatActivity {
         }
         Toast.makeText(this, bluetoothDevice + "연결 완료", Toast.LENGTH_SHORT).show();
         connect_status = true;
-        // Rfcomm 채널을 통해 블루투스 디바이스와 통신하는 소켓 생성
 
         try {
             bluetoothSocket = bluetoothDevice.createRfcommSocketToServiceRecord(uuid);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         try {
             bluetoothSocket.connect();
-        } catch (IOException ex) {
-            Log.e("", ex.getMessage());
+        } catch (IOException e) {
+            Log.e("", e.getMessage());
             try {
                 bluetoothSocket = (BluetoothSocket) bluetoothDevice.getClass().getMethod("createRfcommSocket", new Class[]{int.class}).invoke(bluetoothDevice, 1);
                 bluetoothSocket.connect();
@@ -140,56 +159,42 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         try{
-            Log.v("verbose", "connect device2");
             outputStream = bluetoothSocket.getOutputStream();
             inputStream = bluetoothSocket.getInputStream();
-
-            Log.v("verbose", "receive data");
-            // 데이터 수신 함수 호출
             receiveData();
-
         } catch (IOException e) {
-            Log.e("error", e.getMessage());
             e.printStackTrace();
         }
     }
 
-    // receiveData 메서드에서 text 값을 활용
     public void receiveData() {
         final Handler handler = new Handler();
-        //데이터 수신을 위한 버퍼 생성
         readBufferPosition = 0;
         readBuffer = new byte[1024];
-
-        //데이터 수신을 위한 쓰레드 생성
+        Log.d("check", "first");
         workerThread = new Thread(new Runnable() {
             @Override
             public void run() {
+                Log.d("check", "second");
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
-                        //데이터 수신 확인
                         int byteAvailable = inputStream.available();
-                        //데이터 수신 된 경우
                         if (byteAvailable > 0) {
-                            Log.d(TAG, "run: text = 데이터 수신");
-                            //입력 스트림에서 바이트 단위로 읽어옴
                             byte[] bytes = new byte[byteAvailable];
                             inputStream.read(bytes);
-                            //입력 스트림 바이트를 한 바이트씩 읽어옴
                             for (int i = 0; i < byteAvailable; i++) {
                                 byte tempByte = bytes[i];
-                                //개행문자를 기준으로 받음 (한줄)
                                 if (tempByte == '\n') {
-                                    //readBuffer 배열을 encodeBytes로 복사
                                     byte[] encodedBytes = new byte[readBufferPosition];
                                     System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
-                                    //인코딩 된 바이트 배열을 문자열로 변환
                                     final String text = new String(encodedBytes, "UTF-8");
                                     readBufferPosition = 0;
+
                                     handler.post(new Runnable() {
                                         @Override
                                         public void run() {
                                             Log.d(TAG, "run: text =" + text);
+                                            addDataToCSV(text);
                                         }
                                     });
                                 } else {
@@ -210,4 +215,36 @@ public class MainActivity extends AppCompatActivity {
         });
         workerThread.start();
     }
+
+    private void addDataToCSV(String data){
+        if (csvDataBuilder.length() == 0) {
+            csvDataBuilder.append("Timestamp, Elapsed Time, X, Y, Z, Heart Rate").append("\n");
+        }
+
+        csvDataBuilder.append(data).append("\n");
+        if (csvDataBuilder.toString().split("\n").length >= 10) {
+            uploadToFirebaseStorage(csvDataBuilder.toString());
+            csvDataBuilder = new StringBuilder();
+        }
+    }
+
+    private void uploadToFirebaseStorage(String csvData){
+        String fileName = "sample.csv";
+
+        try {
+            ByteArrayInputStream stream = new ByteArrayInputStream(csvData.getBytes("UTF-8"));
+            StorageReference fileRef = storageReference.child(fileName);
+            fileRef.putStream(stream)
+                    .addOnSuccessListener(taskSnapshot -> {
+                        Log.d("Firebase", "Upload successful");
+                        // 업로드 후 추가적인 작업 수행 가능
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("Firebase", "Upload failed: " + e.getMessage());
+                    });
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+    }
 }
+

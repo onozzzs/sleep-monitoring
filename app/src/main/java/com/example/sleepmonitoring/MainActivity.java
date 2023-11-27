@@ -16,6 +16,9 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.ByteArrayInputStream;
@@ -47,6 +50,12 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
 public class MainActivity extends AppCompatActivity {
     private FirebaseStorage storage;
     private StorageReference storageReference;
@@ -66,6 +75,10 @@ public class MainActivity extends AppCompatActivity {
     boolean connect_status;
     private static final UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
 
+    private TextView resultTextView;
+    private Button fetchDataButton;
+    private static final String BASE_URL = "https://90da-124-57-229-211.ngrok-free.app";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,7 +91,43 @@ public class MainActivity extends AppCompatActivity {
         firebaseAppCheck.installAppCheckProviderFactory(
                 PlayIntegrityAppCheckProviderFactory.getInstance());
 
-        setBluetooth();
+        resultTextView = findViewById(R.id.resultTextView);
+        fetchDataButton = findViewById(R.id.fetchDataButton);
+
+        fetchDataButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                fetchDataFromServer();
+            }
+        });
+//        setBluetooth();
+    }
+
+    private void fetchDataFromServer() {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        ApiService apiService = retrofit.create(ApiService.class);
+        Call<DataResponse> call = apiService.getData();
+
+        call.enqueue(new Callback<DataResponse>() {
+            @Override
+            public void onResponse(Call<DataResponse> call, Response<DataResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    DataResponse data = response.body();
+                    resultTextView.setText(data.getMessage());
+                } else {
+                    resultTextView.setText("서버로부터 데이터를 가져오는데 실패했습니다.");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<DataResponse> call, Throwable t) {
+                resultTextView.setText("통신 실패: " + t.getMessage());
+            }
+        });
     }
 
     @SuppressLint("MissingPermission")
@@ -237,7 +286,6 @@ public class MainActivity extends AppCompatActivity {
             fileRef.putStream(stream)
                     .addOnSuccessListener(taskSnapshot -> {
                         Log.d("Firebase", "Upload successful");
-                        // 업로드 후 추가적인 작업 수행 가능
                     })
                     .addOnFailureListener(e -> {
                         Log.e("Firebase", "Upload failed: " + e.getMessage());

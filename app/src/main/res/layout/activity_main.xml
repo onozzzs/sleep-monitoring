@@ -12,6 +12,13 @@
         android:text="Fetch Data"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="24dp"/>
+    <Button
+        android:id="@+id/startButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="start"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="500dp"/>
 
     <TextView
         android:id="@+id/resultTextView"

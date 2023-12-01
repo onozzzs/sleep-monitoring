@@ -21,16 +21,21 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -60,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseStorage storage;
     private StorageReference storageReference;
     private StringBuilder csvDataBuilder = new StringBuilder();
-    private final String TAG = this.getClass().getSimpleName();
+    private StringBuilder csvAverageDataBuilder = new StringBuilder();
     private static final int REQUEST_ENABLE_BT = 10;
     private BluetoothAdapter bluetoothAdapter;
     private Set<BluetoothDevice> devices;
@@ -76,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
     private static final UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
 
     private TextView resultTextView;
-    private Button fetchDataButton;
+    private Button fetchDataButton, startButton;
     private static final String BASE_URL = "https://90da-124-57-229-211.ngrok-free.app";
 
     @Override
@@ -93,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
 
         resultTextView = findViewById(R.id.resultTextView);
         fetchDataButton = findViewById(R.id.fetchDataButton);
+        startButton = findViewById(R.id.startButton);
 
         fetchDataButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -100,8 +106,27 @@ public class MainActivity extends AppCompatActivity {
                 fetchDataFromServer();
             }
         });
-//        setBluetooth();
+        setBluetooth();
+
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendDataToArduino("S");
+            }
+        });
     }
+
+    private void sendDataToArduino(String message) {
+        byte[] bytes = message.getBytes();
+        try {
+            outputStream.write(bytes);
+            Log.d("arduino", "send data to arduino");
+        } catch (IOException e) {
+            Log.d("arduino", "failed to send data");
+            e.printStackTrace();
+        }
+    }
+
 
     private void fetchDataFromServer() {
         Retrofit retrofit = new Retrofit.Builder()
@@ -199,7 +224,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             bluetoothSocket.connect();
         } catch (IOException e) {
-            Log.e("", e.getMessage());
+            Log.e("arduino", e.getMessage());
             try {
                 bluetoothSocket = (BluetoothSocket) bluetoothDevice.getClass().getMethod("createRfcommSocket", new Class[]{int.class}).invoke(bluetoothDevice, 1);
                 bluetoothSocket.connect();
@@ -207,11 +232,12 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("error", "could not establish");
             }
         }
+
         try{
             outputStream = bluetoothSocket.getOutputStream();
             inputStream = bluetoothSocket.getInputStream();
             receiveData();
-        } catch (IOException e) {
+        } catch (IOException e){
             e.printStackTrace();
         }
     }
@@ -220,11 +246,9 @@ public class MainActivity extends AppCompatActivity {
         final Handler handler = new Handler();
         readBufferPosition = 0;
         readBuffer = new byte[1024];
-        Log.d("check", "first");
         workerThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                Log.d("check", "second");
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
                         int byteAvailable = inputStream.available();
@@ -242,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
                                     handler.post(new Runnable() {
                                         @Override
                                         public void run() {
-                                            Log.d(TAG, "run: text =" + text);
+                                            Log.d("arduino", text);
                                             addDataToCSV(text);
                                         }
                                     });
@@ -266,19 +290,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addDataToCSV(String data){
-        if (csvDataBuilder.length() == 0) {
-            csvDataBuilder.append("Timestamp, Elapsed Time, X, Y, Z, Heart Rate").append("\n");
+        if (data.startsWith("Average")){
+            if (csvAverageDataBuilder.length() == 0) {
+                csvAverageDataBuilder.append("Average").append("\n");
+            }
+            String value = data.split(" ")[1];
+            csvAverageDataBuilder.append(value).append("\n");
         }
 
         csvDataBuilder.append(data).append("\n");
-        if (csvDataBuilder.toString().split("\n").length >= 10) {
-            uploadToFirebaseStorage(csvDataBuilder.toString());
+        if (csvDataBuilder.toString().split("\n").length >= 81) {
+            uploadToFirebaseStorage(csvAverageDataBuilder.toString(), "average");
+            uploadToFirebaseStorage(csvDataBuilder.toString(), "total");
             csvDataBuilder = new StringBuilder();
+            csvAverageDataBuilder = new StringBuilder();
         }
     }
 
-    private void uploadToFirebaseStorage(String csvData){
-        String fileName = "sample.csv";
+    private void uploadToFirebaseStorage(String csvData, String type){
+        String currentDate = new SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(new Date());
+        String fileName = currentDate + "-" + type + ".csv";
 
         try {
             ByteArrayInputStream stream = new ByteArrayInputStream(csvData.getBytes("UTF-8"));

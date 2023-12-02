@@ -62,6 +62,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
+    private FirebaseDatabase database;
+    private DatabaseReference databaseReference;
     private FirebaseStorage storage;
     private StorageReference storageReference;
     private StringBuilder csvDataBuilder = new StringBuilder();
@@ -79,10 +81,8 @@ public class MainActivity extends AppCompatActivity {
     int pariedDeviceCount;
     boolean connect_status;
     private static final UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
-
     private TextView resultTextView;
     private Button fetchDataButton, startButton;
-    private static final String BASE_URL = "https://90da-124-57-229-211.ngrok-free.app";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,6 +91,9 @@ public class MainActivity extends AppCompatActivity {
 
         storage = FirebaseStorage.getInstance();
         storageReference = storage.getReference();
+
+        database = FirebaseDatabase.getInstance();
+        databaseReference = database.getReference("20231203");
 
         FirebaseAppCheck firebaseAppCheck = FirebaseAppCheck.getInstance();
         firebaseAppCheck.installAppCheckProviderFactory(
@@ -103,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
         fetchDataButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                fetchDataFromServer();
+                fetchDataFromDatabase();
             }
         });
         setBluetooth();
@@ -127,32 +130,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-    private void fetchDataFromServer() {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        ApiService apiService = retrofit.create(ApiService.class);
-        Call<DataResponse> call = apiService.getData();
-
-        call.enqueue(new Callback<DataResponse>() {
+    private void fetchDataFromDatabase() {
+        databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onResponse(Call<DataResponse> call, Response<DataResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    DataResponse data = response.body();
-                    resultTextView.setText(data.getMessage());
-                } else {
-                    resultTextView.setText("서버로부터 데이터를 가져오는데 실패했습니다.");
-                }
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String data = snapshot.getValue(String.class);
+                resultTextView.setText(data);
             }
 
             @Override
-            public void onFailure(Call<DataResponse> call, Throwable t) {
-                resultTextView.setText("통신 실패: " + t.getMessage());
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                // 에러 발생 시 호출됨
+                resultTextView.setText("Error: " + databaseError.getMessage());
             }
         });
+
     }
 
     @SuppressLint("MissingPermission")

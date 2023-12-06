@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">Sleep Monitoring</string>
+    <string name="meditation_analytics">\n</string>
+    <string name="based_on_your_data" />
+    <string name="meditation_overview" />
+    <string name="meditation" />
+    <string name="_00_00" />
+    <string name="minutes" />
+    <string name="weekly_overview" />
 </resources>

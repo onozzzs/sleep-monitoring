@@ -1,52 +1,51 @@
 package com.example.sleepmonitoring;
 
+import android.annotation.SuppressLint;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.MenuItem;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import android.os.Bundle;
-import androidx.annotation.NonNull;
+import androidx.lifecycle.ViewModelProvider;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import android.view.MenuItem;
-import android.annotation.SuppressLint;
 
-public class MenuActivity extends AppCompatActivity {
+public class FragmentActivity extends AppCompatActivity {
 
-    private FragmentManager fragmentManager = getSupportFragmentManager();
-    private HomeFragment fragmentHome = new HomeFragment();
-    private AnalysisFragment fragmentAnalysis = new AnalysisFragment();
+    private StopwatchViewModel stopwatchViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_menu);
+        setContentView(R.layout.activity_main);
 
-        FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.menu_frame_layout, fragmentHome).commitAllowingStateLoss();
 
-        @SuppressLint({"MissingInflatedId", "LocalSuppress"}) BottomNavigationView bottomNavigationView = findViewById(R.id.menu_bottom_navigation);
-        bottomNavigationView.setOnNavigationItemSelectedListener(new ItemSelectedListener());
+        stopwatchViewModel = new ViewModelProvider(this).get(StopwatchViewModel.class);
+
+        // MainmenuHome 및 MainmenuAnalysis 프래그먼트 생성
+        HomeFragment home = new HomeFragment();
+        Log.d("YourMainActivity", "Setting ViewModel in MainmenuHome: " + stopwatchViewModel);
+        home.setStopwatchViewModel(stopwatchViewModel);
+
+        AnalysisFragment mainmenuAnalysis = new AnalysisFragment();
+        Log.d("YourMainActivity", "Setting ViewModel in MainmenuAnalysis: " + stopwatchViewModel);
+        mainmenuAnalysis.setStopwatchViewModel(stopwatchViewModel);
+
+        // 프래그먼트를 화면에 추가 (예: transaction 사용)
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.mainmenuHomeFragment, home)
+                .commit();
+
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.mainmenuAnalysisFragment, mainmenuAnalysis)
+                .commit();
     }
 
-    class ItemSelectedListener implements BottomNavigationView.OnNavigationItemSelectedListener {
-        @SuppressLint("NonConstantResourceId")
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-            FragmentTransaction transaction = fragmentManager.beginTransaction();
-
-            if (menuItem.getItemId() == R.id.home) {
-                if (fragmentHome == null) {
-                    fragmentHome = new MainmenuHome();
-                }
-                transaction.replace(R.id.menu_frame_layout, fragmentHome).commitAllowingStateLoss();
-            } else if (menuItem.getItemId() == R.id.analysis) {
-                if (fragmentAnalysis == null) {
-                    fragmentAnalysis = new MainmenuAnalysis();
-                }
-                transaction.replace(R.id.menu_frame_layout, fragmentAnalysis).commitAllowingStateLoss();
-            }
-
-            return true;
-        }
+    // Getter method to access the ViewModel from fragments
+    public StopwatchViewModel getStopwatchViewModel() {
+        return stopwatchViewModel;
     }
-
 }

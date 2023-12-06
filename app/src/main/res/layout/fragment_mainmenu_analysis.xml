@@ -6,17 +6,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background = "#E6E4E4"
-    tools:context=".MainmenuAnalysis"
+    tools:context=".AnalysisFragment"
     tools:ignore="ExtraText">
 
     <TextView
         android:id="@+id/textscore"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/meditation_analytics"
         android:layout_marginLeft="10sp"
-        android:textSize="28sp"
         android:fontFamily="@font/scdream5"
+        android:text="MEDITATION ANALYTICS"
+        android:textSize="28sp"
         android:textStyle="bold" />
 
     <TextView
@@ -27,9 +27,10 @@
         android:layout_marginTop="3dp"
         android:layout_marginLeft="10sp"
         android:fontFamily="@font/scdream5"
-        android:text="@string/based_on_your_data"
+        android:text="based on your data"
         android:textColor="#626263"
         android:textSize="14sp" />
+
 
     <androidx.cardview.widget.CardView
         android:id="@+id/boxContainer1"
@@ -96,7 +97,7 @@
         android:layout_below="@id/boxContainer1"
         android:layout_marginTop="18dp"
         android:layout_marginLeft="10sp"
-        android:text="@string/meditation_overview"
+        android:text="MEDITATION OVERVIEW"
         android:textSize="22sp"
         android:fontFamily="@font/scdream5" />
 
@@ -123,7 +124,7 @@
                 android:layout_marginStart="10dp"
                 android:layout_marginTop="8dp"
                 android:fontFamily="@font/scdream5"
-                android:text="@string/meditation"
+                android:text="MEDITATION"
                 android:textColor="#FFFFFF"
                 android:textSize="22sp" />
 
@@ -145,7 +146,7 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="1dp"
                 android:fontFamily="@font/scdream5"
-                android:text="@string/minutes"
+                android:text="minutes"
                 android:textColor="#FFFFFF"
                 android:textSize="20sp" />
 
@@ -181,7 +182,7 @@
         android:layout_below="@id/boxContainer2"
         android:layout_marginTop="18dp"
         android:layout_marginLeft="10sp"
-        android:text="@string/weekly_overview"
+        android:text="WEEKLY OVERVIEW"
         android:textSize="22sp"
         android:fontFamily="@font/scdream5" />
 

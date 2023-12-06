@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/splash_screen"
     android:padding="16dp"
-    tools:context=".MainmenuHome"
+    tools:context=".MenuActivity"
     tools:ignore="ExtraText">
 
     <Button
@@ -51,7 +51,7 @@
         android:layout_marginTop="9dp"/>
 
     <android.widget.Button
-        android:id="@+id/buttonNextActivity"
+        android:id="@+id/nextActivityButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"

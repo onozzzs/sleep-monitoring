@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1916862882",
+    "project_id": "sleep-monitoring-167d4",
+    "storage_bucket": "sleep-monitoring-167d4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1916862882:android:fccf96ecf5d4791dc732fb",
+        "android_client_info": {
+          "package_name": "com.example.sleepmonitoring"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDB41ElY8OV43H_1DeqPq9XRnIt0JyO1dE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

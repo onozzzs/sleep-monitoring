@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="40dp" /> <!-- 20dp는 둥글게 만들어지는 정도를 나타냅니다. 원하는 값으로 조절 가능합니다. -->
+    <solid android:color="#5DCCFC" /> <!-- 버튼 배경 색상을 나타냅니다. -->
+</shape>

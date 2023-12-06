@@ -1,31 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:background="@drawable/splash_screen"
+    android:padding="16dp"
+    tools:context=".MainmenuHome"
+    tools:ignore="ExtraText">
 
     <Button
         android:id="@+id/fetchDataButton"
+        style="@style/Widget.AppCompat.Button.Borderless"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="24dp"
         android:text="Fetch Data"
+        android:visibility="visible" />
+
+    <ImageView
+        android:id="@+id/imageView1"
+        android:layout_width="242dp"
+        android:layout_height="274dp"
+        android:layout_below="@id/mediTextView"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="24dp"/>
-    <Button
-        android:id="@+id/startButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="start"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="500dp"/>
+        app:srcCompat="@drawable/mediikon" />
 
     <TextView
-        android:id="@+id/resultTextView"
+        android:id="@+id/howTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=""
+        android:text="How to"
+        android:textColor="#FFFFFF"
+        android:textSize="30sp"
+        android:fontFamily="@font/scdream5"
         android:layout_below="@id/fetchDataButton"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="100dp"/>
+    <TextView
+        android:id="@+id/mediTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Meditation"
+        android:textColor="#FFFFFF"
+        android:textSize="30sp"
+        android:fontFamily="@font/scdream5"
+        android:layout_below="@id/howTextView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="9dp"/>
+
+    <android.widget.Button
+        android:id="@+id/buttonNextActivity"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/imageView1"
+        android:background="#FFFFFF"
+        android:fontFamily="@font/scdream5"
+        android:text="Go" />
+
+
 </RelativeLayout>

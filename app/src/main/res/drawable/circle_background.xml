@@ -1,0 +1,12 @@
+<!-- res/drawable/circle_background.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <!-- 테두리 설정 -->
+    <stroke
+        android:width="8dp"
+    android:color="#5DCCFC"
+    />
+
+    <!-- 안을 채우지 않음 -->
+    <solid android:color="@android:color/transparent" />
+</shape>

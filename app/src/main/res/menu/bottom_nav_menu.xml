@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/home"
+        android:icon="@mipmap/ic_launcher"
+        android:title="Home" />
+    <item
+        android:id="@+id/analysis"
+        android:icon="@drawable/chartlkon"
+        android:title="Analysis" />
+</menu>
